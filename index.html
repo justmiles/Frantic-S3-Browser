@@ -9,6 +9,8 @@
 		<script type="text/javascript" src="assets/js/frantics3browser.js"></script>
 		<link rel="stylesheet" href="assets/css/frantics3browser.css" type="text/css" />
 		<link rel="stylesheet" href="assets/css/branding.css" type="text/css" />
+		<script type="text/javascript" charset="utf8" src="//cdn.datatables.net/1.10.4/js/jquery.dataTables.js"></script>
+
 	</head>
 <body>
 
@@ -26,7 +28,28 @@
 		<input type="submit" value="Login" />
 	</form>
 </div>
-<div id="bucketlist"></div>
+<div id="bucketlist">
+
+	<table id="data_table" class="display">
+		<thead>
+			<tr>
+				<th>Name</th>
+				<th>Size</th>
+				<th>Last Modified</th>
+				<th>Download Link</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<!-- <td>Row 1 Data 1</td> --> 
+			</tr>
+			<tr>
+				<!--  <td>Row 2 Data 1</td> -->
+			</tr>
+		</tbody>
+	</table>
+
+</div>
 <div id="upload">
 	<form id="upload_form" action="/" method="post" enctype="multipart/form-data">
 		<label for="fileupload">Select file to upload: </label><div id="fake_upload">Choose file<input type="file" id="fileupload" name="file" /></div>
@@ -41,7 +64,7 @@
 var frantics3browser = new FranticS3Browser;
 jQuery(document).ready(function(){
         // See http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region for a listing of proper s3_endpoints.
-	frantics3browser.init({'hash': location.hash, 'login_form': '#login_form', 'div_logout_form': '#div_logout_form', 'div_upload_form': '#upload', 'fileupload_field': '#fileupload', 'bucketlist': '#bucketlist', 'login_error': '#login_error', 's3_endpoint': 's3-eu-west-1.amazonaws.com'});
+	frantics3browser.init({'hash': location.hash, 'login_form': '#login_form', 'div_logout_form': '#div_logout_form', 'div_upload_form': '#upload', 'fileupload_field': '#fileupload', 'bucketlist': '#bucketlist', 'login_error': '#login_error', 's3_endpoint': 's3-us-west-2.amazonaws.com'});
 });
 </script>
 

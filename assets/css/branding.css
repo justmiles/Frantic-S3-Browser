@@ -1,2 +1,25 @@
 /* Add your custom CSS here */
+@import url("//cdn.datatables.net/1.10.4/css/jquery.dataTables.css");
+
+ A {
+	color: #97d937;
+	font-family:'OpenSansExtrabold', sans-serif;
+	font-weight: normal;
+	font-style: normal;
+	font-size: 12px;
+	text-decoration: none;
+}
+A:hover {
+	text-decoration: underline;
+}
+UL.root {
+	border-top: 1px solid #97d937;
+	border-bottom: 1px solid #97d937;
+	list-style: none;
+	padding:20px;
+}
+UL.root LI {
+	line-height: 10px;
+	margin: 10px;
+}
 

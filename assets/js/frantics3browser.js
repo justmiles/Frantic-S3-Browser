@@ -97,11 +97,12 @@ var FranticS3Browser = function () {
         // http://docs.amazonwebservices.com/AmazonS3/2006-03-01/dev/RESTAuthentication.html
     };
 
-    var generate_bucket_listing = function (files) {
-        var i;
-        var out = '<ul class="root">';
-        for (i=0; i < files.length; i++) {
-            var name = files[i];
+    var generate_bucket_listing = function(files) {
+        
+        for (var key in files) {
+            var name = files[key]["Name"];
+            var size = files[key]['Size'];
+            var last_modified = files[key]['LastModified'];
 
             // Skip files that end with a ~
             // Skip files that end with $folder$ (3hub files),
@@ -110,23 +111,33 @@ var FranticS3Browser = function () {
             }
 
             var klass = 'file';
-            var title = name;
             var url = protocolurl + bucket + s3url;
 
             var expires = new Date().valueOf();
-            expires = parseInt(expires/1000); // milliseconds to seconds
+            expires = parseInt(expires / 1000); // milliseconds to seconds
             expires += 21600; // signed request valid for 6 hours
-            var signedparamsdata = {'response-cache-control': 'No-cache', 'response-content-disposition': 'attachment'};
+            var signedparamsdata = {
+                'response-cache-control': 'No-cache',
+                'response-content-disposition': 'attachment'
+            };
             var signedurl = '/' + encodeURIComponent(name) + '?' + jQuery.param(signedparamsdata);
             var signature = sign_api(expires, signedurl);
 
-            var paramsdata = {'AWSAccessKeyId': aws_access_key_id, 'Signature': signature, 'Expires': expires};
+            var paramsdata = {
+                'AWSAccessKeyId': aws_access_key_id,
+                'Signature': signature,
+                'Expires': expires
+            };
             url += signedurl + '&' + jQuery.param(paramsdata);
 
-            out += '<li class="' + klass + '"><a href="' + url + '">' + title + '</a>' + '</li>';
+            $("#data_table tbody").append( 
+                '<tr> <td>' + name + '</td>'+
+                '<td>' + size + '</td>' +
+                '<td>' + last_modified + '</td>'+
+                '<td> <a href= ' + url + '> download </a> </td>' +
+                 '</tr>');
         }
-        out += "</ul>";
-        $bucketlist.html(out);
+        $('#data_table').DataTable();
     };
 
     var set_endpoint = function (endpoint) {
@@ -156,7 +167,11 @@ var FranticS3Browser = function () {
                             var files = [];
                             var i;
                             for (i = 0; i < contents.length; i++) {
-                                files.push(jQuery(contents[i]).find('Key').text());
+                                files[i] = { 
+                                    "Name" : jQuery(contents[i]).find('Key').text(), 
+                                    "LastModified" : jQuery(contents[i]).find('LastModified').text() , 
+                                    "Size" : jQuery(contents[i]).find('Size').text()  
+                                };
                             }
                             files.sort();
                             generate_bucket_listing(files);
