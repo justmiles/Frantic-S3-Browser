@@ -98,11 +98,11 @@ var FranticS3Browser = function () {
     };
 
     var generate_bucket_listing = function(files) {
-        
-        for (var key in files) {
-            var name = files[key]["Name"];
-            var size = files[key]['Size'];
-            var last_modified = files[key]['LastModified'];
+
+        for (var i = 0; i < files.length; i++) {
+            var name = files[i]["Name"];
+            var size = files[i]['Size'];
+            var last_modified = files[i]['LastModified'];
 
             // Skip files that end with a ~
             // Skip files that end with $folder$ (3hub files),
@@ -132,26 +132,53 @@ var FranticS3Browser = function () {
 
             $("#data_table tbody").append( 
                 '<tr> <td>' + name + '</td>'+
-                '<td>' + size + '</td>' +
-                '<td>' + last_modified + '</td>'+
+                '<td>' + size + ' </td>' +
+                '<td>' + humanFileSize(size) + ' </td>' +
+                '<td>' + parseISO8601(last_modified) + '</td>'+
                 '<td> <a href= ' + url + '> download </a> </td>' +
                  '</tr>');
         }
-        $('#data_table').DataTable();
+         $('#data_table').DataTable();
     };
+     var parseISO8601 = function(str) {
+         // we assume str is a UTC date ending in 'Z'
 
+         var parts = str.split('T'),
+         dateParts = parts[0].split('-'),
+         timeParts = parts[1].split('Z'),
+         timeSubParts = timeParts[0].split(':'),
+         timeSecParts = timeSubParts[2].split('.'),
+         timeHours = Number(timeSubParts[0]),
+         _date = new Date;
+
+         _date.setUTCFullYear(Number(dateParts[0]));
+         _date.setUTCMonth(Number(dateParts[1])-1);
+         _date.setUTCDate(Number(dateParts[2]));
+         _date.setUTCHours(Number(timeHours));
+         _date.setUTCMinutes(Number(timeSubParts[1]));
+         _date.setUTCSeconds(Number(timeSecParts[0]));
+         if (timeSecParts[1]) _date.setUTCMilliseconds(Number(timeSecParts[1]));
+
+         // by using setUTC methods the date has already been converted to local time(?)
+         return _date;
+        }
     var set_endpoint = function (endpoint) {
         s3url = '.' + endpoint;
     };
 
-    var init_bucketlist = function () {
-        var expires = new Date().valueOf();
-        expires = parseInt(expires/1000); // milliseconds to seconds
-        expires += 21600; // signed request valid for 6 hours
-        var signature = sign_api(expires, '/');
-        jQuery(function() {
+    var init_bucketlist = function() {
+        //TODO: add some sort of progress bar
+        
+        var load = function(marker, files) {
+            var expires = new Date().valueOf();
+            expires = parseInt(expires/1000); // milliseconds to seconds
+            expires += 21600; // signed request valid for 6 hours
+            var signature = sign_api(expires, '/');
+            files = typeof files !== 'undefined' ? files : [];
+            marker = typeof marker !== 'undefined' ? marker : '0';
+            jQuery(function() {
                 $.ajax({
-                        url: protocolurl + bucket + s3url + '/',
+                        url: protocolurl + bucket + s3url + '/?&marker=' + marker,
                         data: {'AWSAccessKeyId': aws_access_key_id, 'Signature': signature, 'Expires': expires},
                         dataFormat: 'xml',
                         cache: false,
@@ -164,23 +191,33 @@ var FranticS3Browser = function () {
                             $div_upload_form.show();
                             $("#div_login_form").addClass('login');
                             var contents = jQuery(data).find('Contents');
-                            var files = [];
+                            var is_truncated = jQuery(data).find('IsTruncated').text();
+                            var marker = jQuery(contents[ ( contents.length - 1)]).find('Key').text();
                             var i;
                             for (i = 0; i < contents.length; i++) {
-                                files[i] = { 
+                                files.push({ 
                                     "Name" : jQuery(contents[i]).find('Key').text(), 
                                     "LastModified" : jQuery(contents[i]).find('LastModified').text() , 
                                     "Size" : jQuery(contents[i]).find('Size').text()  
-                                };
+                                });
                             }
-                            files.sort();
-                            generate_bucket_listing(files);
+ 
+                             if (is_truncated == 'true') { 
+                               load(marker, files);
+                            } else {
+                                generate_bucket_listing(files);
+                            }
+                            
                         },
                         error: function(data) {
                             $login_error.show();
                         }
                     });
             });
+        }
+
+        load();       
+
     };
 
     var init_fileupload_field = function () {
@@ -266,6 +303,19 @@ var FranticS3Browser = function () {
                 }, 100);
         });
     };
+
+    var humanFileSize = function (bytes, si) {
+        var thresh = si ? 1000 : 1024;
+        if(bytes < thresh) return bytes + ' B';
+        var units = si ? ['kB','MB','GB','TB','PB','EB','ZB','YB'] : ['KiB','MiB','GiB','TiB','PiB','EiB','ZiB','YiB'];
+        var u = -1;
+        do {
+            bytes /= thresh;
+            ++u;
+        } while(bytes >= thresh);
+        return bytes.toFixed(1)+' '+units[u];
+    };
+
 
     return {
         set_aws_access_key_id: function (args) {
